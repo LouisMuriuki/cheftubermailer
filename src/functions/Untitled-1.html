@@ -1,91 +1,3 @@
-import {
-  app,
-  HttpRequest,
-  HttpResponseInit,
-  InvocationContext,
-} from "@azure/functions";
-import * as nodemailer from "nodemailer";
-
-interface bodyProps {
-  to: string;
-  subject: string;
-  text: string;
-  title: string;
-  nutritioninformation: string;
-  allergies: string;
-  ingredients: any;
-  directions: any;
-  imageLink: string;
-  time: string;
-  serving: string;
-}
-
-export async function cheftubermailer(
-  request: HttpRequest,
-  context: InvocationContext
-): Promise<HttpResponseInit> {
-  context.log(`Http function processed request for url "${request.url}"`);
-  const requestData = await request.json();
-  const {
-    to,
-    subject,
-    text,
-    ingredients,
-    directions,
-    title,
-    nutritioninformation,
-    allergies,
-  } = requestData as bodyProps;
-  context.log(`HERE IS TO :${to}`);
-  // Ensure all required fields are present
-  if (!to || !subject || !text) {
-    return {
-      status: 400, // Bad Request
-      body: "The request is missing one or more of the required fields: to, subject, text.",
-    };
-  }
-
-  async function fetchMeal(title: string) {
-    try {
-      const response = await fetch(
-        `https://www.themealdb.com/api/json/v1/1/search.php?s=${title}`
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const meal = await response.json();
-      console.log(meal.meals[0].strMealThumb);
-      return meal.meals[0].strMealThumb;
-    } catch (error) {
-      console.error("There was a problem fetching the meal data:", error);
-    }
-  }
-  const processedLink = await fetchMeal(title);
-
-  function createIngredientsHtmlList(items: any[]) {
-    return items
-      .map(
-        (item: any) =>
-          `<p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">${item}<br></p>`
-      )
-      .join("");
-  }
-  function createDirectionsHtmlList(items: any[]) {
-    return items
-      .map(
-        (item: any, index: any) =>
-          `<p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">
-  ${`${index + 1} ${item}`}
-  </p>`
-      )
-      .join("");
-  }
-  const date = new Date();
-  const year = date.getFullYear();
-  const ingredientsHtml = createIngredientsHtmlList(ingredients);
-  const directionsHtml = createDirectionsHtmlList(directions);
-
-  const htmlContent = `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en" style="padding:0;Margin:0">
  <head>
@@ -166,7 +78,7 @@ a[x-apple-data-detectors] {
                   <td valign="top" align="center" style="padding:0;Margin:0;width:580px">
                    <table width="100%" cellspacing="0" cellpadding="0" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                      <tr style="border-collapse:collapse">
-                      <!-- <td align="center" class="es-infoblock" style="padding:0;Margin:0;line-height:14px;font-size:12px;color:#CCCCCC"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:18px;color:#CCCCCC;font-size:12px">Put your preheader text here</p><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:18px;color:#CCCCCC;font-size:12px"><u><a target="_blank" href="https://www.louismuriuki.dev/chefTuber" class="view" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#CCCCCC;font-size:12px">View in browser</a></u></p></td> -->
+                      <!-- <td align="center" class="es-infoblock" style="padding:0;Margin:0;line-height:14px;font-size:12px;color:#CCCCCC"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:18px;color:#CCCCCC;font-size:12px">Put your preheader text here</p><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:18px;color:#CCCCCC;font-size:12px"><u><a target="_blank" href="https://viewstripo.email/" class="view" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#CCCCCC;font-size:12px">View in browser</a></u></p></td> -->
                      </tr>
                    </table></td>
                  </tr>
@@ -187,7 +99,7 @@ a[x-apple-data-detectors] {
                   <td align="left" style="padding:0;Margin:0;width:271px">
                    <table width="100%" cellspacing="0" cellpadding="0" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                      <tr style="border-collapse:collapse">
-                      <td class="es-m-txt-c" align="left" style="padding:0;Margin:0;font-size:0px"><a target="_blank" href="https://chat.openai.com/g/g-uZ8pM7xlW-chef-tuber" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FFFFFF;font-size:14px"><img src="https://fcqxtdp.stripocdn.email/content/guids/videoImgGuid/images/1704836096596vabcbvf9.png" alt="Tastyfood logo" title="Tastyfood logo" width="91" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic"></a></td>
+                      <td class="es-m-txt-c" align="left" style="padding:0;Margin:0;font-size:0px"><a target="_blank" href="https://viewstripo.email/" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FFFFFF;font-size:14px"><img src="https://fcqxtdp.stripocdn.email/content/guids/videoImgGuid/images/1704836096596vabcbvf9.png" alt="Tastyfood logo" title="Tastyfood logo" width="91" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic"></a></td>
                      </tr>
                    </table></td>
                  </tr>
@@ -230,7 +142,7 @@ a[x-apple-data-detectors] {
                   <td valign="top" align="center" style="padding:0;Margin:0;width:600px">
                    <table width="100%" cellspacing="0" cellpadding="0" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                      <tr style="border-collapse:collapse">
-                      <td align="center" style="padding:0;Margin:0;font-size:0"><img src="https://fcqxtdp.stripocdn.email/content/guids/CABINET_3daeefbdf622b7d87abe9f2ce37a8cf4/images/85021517931052540.png" alt=${title} width="24" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic"></td>
+                      <td align="center" style="padding:0;Margin:0;font-size:0"><img src="https://fcqxtdp.stripocdn.email/content/guids/CABINET_3daeefbdf622b7d87abe9f2ce37a8cf4/images/85021517931052540.png" alt width="24" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic"></td>
                      </tr>
                    </table></td>
                  </tr>
@@ -244,7 +156,7 @@ a[x-apple-data-detectors] {
                   <td valign="top" align="center" style="padding:0;Margin:0;width:560px">
                    <table width="100%" cellspacing="0" cellpadding="0" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                      <tr style="border-collapse:collapse">
-                      <td align="center" style="padding:0;Margin:0;font-size:0"><a target="_blank" href="https://chat.openai.com/g/g-uZ8pM7xlW-chef-tuber" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FD8701;font-size:14px"><img class="adapt-img" src=${processedLink}  alt=${title} width="560" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic"></a></td>
+                      <td align="center" style="padding:0;Margin:0;font-size:0"><a target="_blank" href="https://viewstripo.email/" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FD8701;font-size:14px"><img class="adapt-img" src="https://fcqxtdp.stripocdn.email/content/guids/CABINET_3daeefbdf622b7d87abe9f2ce37a8cf4/images/26661518180217420.jpg" alt="Tangy honey glazed ham" title="Tangy honey glazed ham" width="560" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic"></a></td>
                      </tr>
                      <tr style="border-collapse:collapse">
                       <td align="left" style="padding:0;Margin:0;padding-bottom:10px;padding-top:15px"><h4 style="Margin:0;line-height:120%;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;color:#666666">Ingredients</h4></td>
@@ -288,8 +200,7 @@ ${ingredientsHtml}</td>
              </tr>
              <!-- Nutrition -->
              <tr style="border-collapse:collapse">
-             
-                <td align="left" style="padding:0;Margin:0;padding-top:15px;padding-left:20px;padding-right:20px">
+              <td align="left" style="padding:0;Margin:0;padding-top:15px;padding-left:20px;padding-right:20px">
                <table width="100%" cellspacing="0" cellpadding="0" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                  <tr style="border-collapse:collapse">
                   <td valign="top" align="center" style="padding:0;Margin:0;width:560px">
@@ -299,20 +210,14 @@ ${ingredientsHtml}</td>
                      </tr>
                      <tr style="border-collapse:collapse">
                       <td align="left" style="padding:0;Margin:0">
-                        ${
-                          nutritioninformation
-                            ? `<p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">
+                        <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">
                          ${nutritioninformation}
-                        </p>`
-                            : `<p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">No Information </p>`
-                        }
+                        </p>
                         </td>
                      </tr>
                    </table></td>
                  </tr>
-               </table>
-               </td>
-              }
+               </table></td>
              </tr>
              <!-- Allergies -->
              <tr style="border-collapse:collapse">
@@ -326,17 +231,13 @@ ${ingredientsHtml}</td>
                      </tr>
                      <tr style="border-collapse:collapse">
                       <td align="left" style="padding:0;Margin:0">
-                        ${
-                          allergies
-                            ? `<p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">
+                        <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">
                     ${allergies}
-                        </p>`
-                            : `<p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#666666;font-size:14px">No Information </p>`
-                        }
+                        </p>
                     </td>
                      </tr>
                      <tr style="border-collapse:collapse">
-                      <td align="center" style="padding:0;Margin:0;padding-top:20px"><span class="es-button-border" style="border-style:solid;border-color:#FD8701;background:#ffffff;border-width:1px;display:inline-block;border-radius:30px;width:auto"><a href="https://chat.openai.com/g/g-uZ8pM7xlW-chef-tuber" class="es-button" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#fd8701;font-size:14px;display:inline-block;background:none 0% 0% repeat scroll #ffffff;border-radius:30px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:17px;width:auto;text-align:center;padding:5px 15px;mso-padding-alt:0;mso-border-alt:10px solid none 0% 0% repeat scroll #ffffff">View more recipes →</a></span></td>
+                      <td align="center" style="padding:0;Margin:0;padding-top:20px"><span class="es-button-border" style="border-style:solid;border-color:#FD8701;background:#ffffff;border-width:1px;display:inline-block;border-radius:30px;width:auto"><a href="https://viewstripo.email/" class="es-button" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#fd8701;font-size:14px;display:inline-block;background:none 0% 0% repeat scroll #ffffff;border-radius:30px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:17px;width:auto;text-align:center;padding:5px 15px;mso-padding-alt:0;mso-border-alt:10px solid none 0% 0% repeat scroll #ffffff">View more recipes →</a></span></td>
                      </tr>
                    </table></td>
                  </tr>
@@ -376,16 +277,16 @@ ${ingredientsHtml}</td>
                   <td valign="top" align="center" style="padding:0;Margin:0;width:520px">
                    <table width="100%" cellspacing="0" cellpadding="0" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                      <tr style="border-collapse:collapse">
-                      <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#FFFFFF;font-size:14px">You are receiving this email because you have visited you requested for the recipe Make sure our messages get to your Inbox (and not your bulk or junk folders). Please add <a target="_blank" href="mailto:tastyfood@info.com" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FFFFFF;font-size:14px"></a>cheftuber1@gmail.com to your contacts!</p></td>
+                      <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#FFFFFF;font-size:14px">You are receiving this email because you have visited you requested for the recipe Make sure our messages get to your Inbox (and not your bulk or junk folders). Please add <a target="_blank" href="mailto:tastyfood@info.com" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FFFFFF;font-size:14px">c</a>heftuber1@gmail.com to your contacts!</p></td>
                      </tr>
                      <tr style="border-collapse:collapse">
                       <td align="center" style="padding:0;Margin:0;padding-top:5px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#FFFFFF;font-size:14px">Support the developer via a token on paypal - luihugo247@gmail.com&nbsp;</p></td>
                      </tr>
                      <tr style="border-collapse:collapse">
-                      <td align="center" class="es-m-txt-c" style="padding:0;Margin:0;padding-top:10px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#FFFFFF;font-size:14px">&nbsp;<u><a href="https://www.louismuriuki.dev/chefTuber" target="_blank" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FFFFFF;font-size:14px">Privacy Policy</a></u></p></td>
+                      <td align="center" class="es-m-txt-c" style="padding:0;Margin:0;padding-top:10px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#FFFFFF;font-size:14px">&nbsp;<u><a href="https://viewstripo.email/" target="_blank" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:none;color:#FFFFFF;font-size:14px">Privacy Policy</a></u></p></td>
                      </tr>
                      <tr style="border-collapse:collapse">
-                      <td align="center" style="padding:0;Margin:0;padding-top:10px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#FFFFFF;font-size:14px">© ${year} Chef Tuber</p></td>
+                      <td align="center" style="padding:0;Margin:0;padding-top:10px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#FFFFFF;font-size:14px">© 2024 Chef Tuber</p></td>
                      </tr>
                    </table></td>
                  </tr>
@@ -399,43 +300,3 @@ ${ingredientsHtml}</td>
   </div>
  </body>
 </html>
-`;
-  setTimeout(async() => {
-    try {
-      let transporter = await nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: {
-          user: "cheftuber1@gmail.com",
-          pass: "oarxvkmoglklisci",
-        },
-      });
-
-      let info: any = await transporter.sendMail({
-        from: "cheftuber1@gmail.com",
-        to: to,
-        subject: subject,
-        text: text,
-        html: htmlContent,
-      });
-      context.log(`Message sent: ${info.messageId}`);
-      return {
-        status: 200, // HTTP status code for success
-        body: `Message sent: ${info.messageId}`,
-      };
-    } catch (error) {
-      context.log(`Error sending email: ${error.message}`);
-      return {
-        status: 500, // HTTP status code for server error
-        body: `Error sending email: ${error.message}`,
-      };
-    }
-  }, 1200);
-}
-
-app.http("cheftubermailer", {
-  methods: ["GET", "POST"],
-  authLevel: "anonymous",
-  handler: cheftubermailer,
-});
